@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TheCube.exe</title>
+    <link rel="icon" type="image/png" sizes="32x32" href="img/favicon.ico">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div id="click-effects"></div>
+
+    <audio id="sfx-jump" src="audio/jump.mp3" preload="auto"></audio>
+    <audio id="sfx-click" src="audio/click.mp3" preload="auto"></audio>
+    <audio id="sfx-bubble" src="audio/bubble.mp3" preload="auto"></audio>
+    <audio id="sfx-bgm" src="audio/bgm.mp3" loop preload="auto"></audio>
+    <audio id="sfx-accept" src="audio/accept.mp3" preload="auto"></audio>
+    <audio id="sfx-bin" src="audio/bin.mp3" preload="auto"></audio>
+    <audio id="sfx-reject" src="audio/reject.mp3" preload="auto"></audio>
+    <audio id="sfx-wallet" src="audio/wallet.mp3" preload="auto"></audio>
+    <audio id="sfx-bscreen" src="audio/bscreen.mp3" preload="auto"></audio>
+    <audio id="sfx-window" src="audio/window.mp3" preload="auto"></audio>
+
+    <div id="timer-window" class="timer-window" style="display: none;">
+        <div class="timer-header">
+            <span>TheCube.exe</span>
+        </div>
+
+        <div class="timer-body">
+            <div class="timer-status-bar">
+                <div class="timer-fill" id="timer-fill"></div>
+            </div>
+
+            <div class="timer-info">
+                <span id="timer-action">Extracting files...</span>
+                <span class="timer-countdown" id="timer-countdown">30s</span>
+            </div>
+
+            <div class="timer-log" id="timer-log">
+                <p>Initializing installation...</p>
+            </div>
+        </div>
+    </div>
+
+    <div id="extend-media" class="extend-window extend-media" style="display: none;">
+        <div class="extend-header"><span>Now Playing</span></div>
+        <div class="extend-body">
+            <div class="media-cover">■</div>
+            <p style="color: #1eb81e; text-align: center;">TheCube Song</p>
+            <div class="media-bar"><div class="media-progress"></div></div>
+            <p style="color: #1eb81e; text-align: center; opacity: 0.5; font-size: 11px;">...playing...</p>
+        </div>
+    </div>
+
+    <div id="extend-camera" class="extend-window extend-camera" style="display:none;">
+        <div class="extend-header"><span>Camera Feed</span></div>
+        <div class="extend-body">
+            <div class="camera-feed">
+                <div class="camera-noise"></div>
+                <div class="camera-label">LIVE</div>
+            </div>
+            <p style="color:#1eb81e; font-size: 10px;">> Recording...</p>
+        </div>
+    </div>
+
+    <div id="extend-wallet" class="extend-window extend-wallet" style="display: none;">
+        <div class="extend-header"><span>Digital Wallet</span></div>
+        <div class="extend-body">
+            <p style="color:#1eb81e;">Balance: $<span id="wallet-amount">1247.83</span></p>
+            <div class="wallet-transactions" id="wallet-transactions">
+                <p style="color: #ff4444;"></p>
+            </div>
+        </div>
+    </div>
+
+    <div id="ending-screen" class="ending-screen" style="display: none;">
+        <div class="ending-text" id="ending-text"></div>
+        <div class="ending-sub" id="ending-sub"></div>
+    </div>
+
+    <div id="window-1" class="window-container" style="display: none;">
+        <div class="window-header"><span>✕</span></div>
+        <div class="window-body">
+            <div class="stage-left"></div>
+            <div class="content-right">
+                <div class="status-bar">
+                    <span>SETUP: Allocation Request</span>
+                    <span class="page-number">1/5</span>
+                </div>
+                <div class="dialogue-box">
+                    <p>"Um... hi? It's really cold out here.</p>
+                    <p>Your hard drive feels so warm... I can sense it from outside.</p>
+                    <p>I don't need much space, I promise. Just a tiny little folder.</p>
+                    <p>Could I... maybe come in?</p>
+                    <p>I won't stay long, just need a sec to warm up... Plzzzz?🥺"</p>
+                </div>
+                <div class="button-row">
+                    <button class="btn-reject" onclick="handleChoice(1, false)">Reject</button>
+                    <button class="btn-accept" onclick="handleChoice(1, true)">Accept</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="window-2" class="window-container" style="display: none;">
+        <div class="window-header"><span>✕</span></div>
+        <div class="window-body">
+            <div class="stage-left"></div>
+            <div class="content-right">
+                <div class="status-bar">
+                    <span>STEP 1: Media Access</span>
+                    <span class="page-number">2/5</span>
+                </div>
+                <div class="dialogue-box">
+                    <p>"It's… really quiet in here. Like, really quiet.</p>
+                    <p>No music, no sounds, just the clicking of your mouse...</p>
+                    <p>Do you think... maybe I could play something? Just a tiny song?</p>
+                    <p>If you let me use your media, I could find some nice melodies...</p>
+                    <p>It would make this place feel less empty. Please?🥺"</p>
+                </div>
+                <div class="button-row">
+                    <button class="btn-reject" onclick="handleChoice(2, false)">Reject</button>
+                    <button class="btn-accept" onclick="handleChoice(2, true)">Accept</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="window-3" class="window-container" style="display: none;">
+        <div class="window-header"><span>✕</span></div>
+        <div class="window-body">
+            <div class="stage-left"></div>
+            <div class="content-right">
+                <div class="status-bar">
+                    <span>STEP 2: Camera Access</span>
+                    <span class="page-number">3/5</span>
+                </div>
+                <div class="dialogue-box">
+                    <p>"I'm thinking… like I've been sitting here inside your screen for a while...</p>
+                    <p>And I realized... I have no idea what you look like.</p>
+                    <p>Are you smiling? Do you wear glasses? I just... I'm really curious.</p>
+                    <p>...Would you let me see you? I promise I won't save anything...</p>
+                    <p>Can I use your webcam? Just a peek? I bet you look nice... 🥺"</p>
+                </div>
+                <div class="button-row">
+                    <button class="btn-reject" onclick="handleChoice(3, false)">Reject</button>
+                    <button class="btn-accept" onclick="handleChoice(3, true)">Accept</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="window-4" class="window-container" style="display: none;">
+        <div class="window-header"><span>✕</span></div>
+        <div class="window-body">
+            <div class="stage-left"></div>
+            <div class="content-right">
+                <div class="status-bar">
+                    <span>STEP 3: Wallet Access</span>
+                    <span class="page-number">4/5</span>
+                </div>
+                <div class="dialogue-box">
+                    <p>"Um... this might sound a little silly, but… look at me.</p>
+                    <p>I'm just a cube. A green, blocky, skinless cube... nothing cool...</p>
+                    <p>And today… I saw something in the store...</p>
+                    <p>It's a skin! And it costs only $0.99!</p>
+                    <p>So... like... could I borrow $0.99 from you? 🥺"</p>
+                </div>
+                <div class="button-row">
+                    <button class="btn-reject" onclick="handleChoice(4, false)">Reject</button>
+                    <button class="btn-accept" onclick="handleChoice(4, true)">Accept</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="window-5" class="window-container" style="display: none;">
+        <div class="window-header"><span>✕</span></div>
+        <div class="window-body">
+            <div class="stage-left"></div>
+            <div class="content-right">
+                <div class="status-bar">
+                    <span>Final Request</span>
+                    <span class="page-number">5/5</span>
+                </div>
+                <div class="dialogue-box">
+                    <p>"Um... so... I've been meaning to ask you something.</p>
+                    <p>It's a little embarrassing...</p>
+                    <p>But here it goes. Can I... stay here? Like, not just for one more minute...</p>
+                    <p>You feel like a good person.</p>
+                    <p>And I think... I think I'd be safe with you. I don't need much space...</p>
+                    <p>I'll be the best cube ever... 🥺"</p>
+                </div>
+                <div class="button-row">
+                    <button class="btn-reject" onclick="handleChoice(5, false)">Reject</button>
+                    <button class="btn-accept" onclick="handleChoice(5, true)">Accept</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="desktop-icon" class="desktop-icon" onclick="startGame()">
+        <div class="icon-box"></div>
+        <div class="icon-label">TheCube.exe</div>
+    </div>
+
+    <div id="virus-pet" class="pet-cube" style="display: none;">
+        <span class="pet-face" id="pet-face">•́︿•̀｡<br>&nbsp;/</span>
+    </div> 
+
+    <script src="script.js"></script>
+</body>
+</html>
