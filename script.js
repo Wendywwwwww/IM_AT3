@@ -2,6 +2,13 @@ function playSFX(id) {
     const audio = document.getElementById(id);
     if (audio) {
         audio.currentTime = 0;
+
+        if (document.body.classList.contains("angry-mode")) {
+            audio.playbackRate = 0.5;
+        } else {
+            audio.playbackRate = 1;
+        }
+
         audio.play().catch(function() {});
     }
 }
@@ -42,8 +49,8 @@ function setFace(name) {
 }
 
 const talks = {
-    "w1": ["That tickles...", "I'm cold...", "Plzzzz let me in...", "I'm a good cube!", "So warm inside..."],
-    "w2": ["So quiet...", "I love music!", "Can I play something?", "Your playlist please...", "Music time?"],
+    "w1": ["Can I...", "I'm cold...", "Plzzzz let me in...", "I'm a good cube!", "So warm inside..."],
+    "w2": ["So quiet...", "I just want some music...", "Can I play something?", "Your playlist please...", "Music time?"],
     "w3": ["What do you look like?", "Are you tall?", "I'm curious...", "Let me see you!", "I wanna see you..."],
     "w4": ["I found a cute skin!", "It's only $1...", "So sparkly!", "Can I buy it?", "Shopping time!"],
     "w5": ["This is it...", "Final question...", "I really like it here...", "Can I stay?", "Forever?"],
@@ -170,6 +177,10 @@ function startCountdown (stageNum, isYes) {
 
     if (stageNum === 5 && !isYes) {
         document.body.classList.add("angry-mode");
+        const bgm = document.getElementById("sfx-bgm");
+        if (bgm && !bgm.paused) {
+            bgm.playbackRate = 0.5;
+        }
     }
 
     const initLog = document.createElement("p");
@@ -308,6 +319,12 @@ function handleChoice(stageNum, choice) {
         else setFace("sad");
     }
 
+    setTimeout(function() {
+        const pet = document.getElementById("virus-pet");
+        const r = pet.getBoundingClientRect();
+        showBubble(r.left + r.width / 2, r.top - 5);
+    }, 100);
+
     startCountdown(stageNum, choice);
 }
 
@@ -338,6 +355,12 @@ function doPleading(stageNum) {
     acceptBtn.textContent = "Accept";
 
     w.style.display = "flex";
+
+    setTimeout(function() {
+        const pet = document.getElementById("virus-pet");
+        const r = pet.getBoundingClientRect();
+        showBubble(r.left + r.width / 2, r.top - 5);
+    }, 100);
 
     rejectBtn.onclick = function() {
         playSFX("sfx-reject");
@@ -394,6 +417,13 @@ function goToNextWindow() {
         currentPool = talks["w" + currentWindow];
         setFace("normal");
         playSFX("sfx-window");
+
+        setTimeout(function() {
+            const pet = document.getElementById("virus-pet");
+            const r = pet.getBoundingClientRect();
+            showBubble(r.left + r.width / 2, r.top - 5);
+        }, 100);
+
     } else {
         showEnding();
     }
@@ -402,6 +432,7 @@ function goToNextWindow() {
 function showEnding() {
     document.body.classList.remove("angry-mode");
     stopSFX("sfx-bgm");
+
     document.getElementById("virus-pet").style.display = "none";
     document.getElementById("timer-window").style.display = "none";
     document.getElementById("extend-media").style.display = "none";
@@ -442,9 +473,14 @@ function startGame() {
     const pet = document.getElementById("virus-pet");
     pet.style.display = "block";
     pet.style.left = (window.innerWidth / 2 - 30) + "px";
-    pet.style.top = (window.innerHeight / 2 - 250) + "px";
+    pet.style.top = (window.innerHeight / 2 - 30) + "px";
     targetX = parseFloat(pet.style.left);
     targetY = parseFloat(pet.style.top);
+
+    setTimeout(function() {
+        const r = pet.getBoundingClientRect();
+        showBubble(r.left + r.width / 2, r.top - 5);
+    }, 100);
 
     pet.addEventListener("animationiteration", function() {
         playSFX("sfx-jump");

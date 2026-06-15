@@ -57,10 +57,12 @@ button:hover,
 }
 
 .icon-box::after {
-    content: "■";
-    font-size: 50px;
+    content: "";
+    width: 30px;
+    height: 30px;
+    background-color: #33ff33;
     position: absolute;
-    top: 44%;
+    top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
 }
@@ -82,6 +84,10 @@ button:hover,
     z-index: 9999;
     animation: jump 1s infinite ease-in-out;
     transition: none;
+}
+
+.pet-cube:hover {
+    box-shadow: 0 0 0 2px #33ff3389;
 }
 
 @keyframes jump {
@@ -130,7 +136,8 @@ button:hover,
 }
 
 .window-container {
-    width: 760px;
+    width: 80vw;
+    max-width: 760px;
     border: 3px solid #1eb81e;
     background-color: #000000;
     display: flex;
@@ -141,6 +148,7 @@ button:hover,
     left: 50%;
     top: 50%;
     transform: translate(-50%, -50%);
+    box-shadow: 0 0 0 4px #000000;
 }
 
 .window-header {
@@ -167,8 +175,10 @@ button:hover,
 }
 
 .stage-left {
-    width: 140px;
-    height: 320px;
+    flex: 0 0 18%;
+    max-width: 140px;
+    min-width: 80px;
+    height: 326px;
     background: linear-gradient(to bottom, #116611 0%, #1eb81e 100%);
     margin-right: 15px;
     box-sizing: border-box;
@@ -185,15 +195,15 @@ button:hover,
     color: #000000;
     font-weight: bold;
     padding: 8px 12px;
-    font-size: 14px;
+    font-size: 10px;
     display: flex;
     justify-content: space-between;
-    border: 2px solid #1eb81e;
     margin-bottom: 15px;
 }
 
 .page-number {
     color:#0f6e2d;
+    font-size: 12px;
 }
 
 .dialogue-box {
@@ -205,6 +215,8 @@ button:hover,
     margin-bottom: 15px;
     background-color: #000000;
     overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: #1eb81e #000000;
 }
 
 .dialogue-box p {
@@ -315,7 +327,8 @@ button:hover,
 }
 
 .timer-window {
-    width: 600px;
+    width: 80vw;
+    max-width: 600px;
     border: 3px solid #1eb81e;
     background-color: #000000;
     z-index: 50;
@@ -323,6 +336,7 @@ button:hover,
     left: 50%;
     top: 50%;
     transform: translate(-50%, -50%);
+    box-shadow: 0 0 0 4px #000000;
 }
 
 .timer-header {
@@ -495,7 +509,7 @@ button:hover,
 .camera-label {
     position: absolute;
     top: 8px;
-    right: 8px;
+    left: 8px;
     color: red;
     font-size: 10px;
     font-weight: bold;
@@ -643,6 +657,10 @@ body.angry-mode .extend-header {
     background-color: #cc0000;
 }
 
+body.angry-mode .extend-body {
+    color: #cc0000;
+}
+
 body.angry-mode .speech-bubble {
     color: red;
     border-color: red;
@@ -654,4 +672,9 @@ body.angry-mode .speech-bubble::after {
 
 body.angry-mode .click-effect {
     color: red;
+}
+
+body.angry-mode .pet-cube:hover {
+    box-shadow: none;
+    cursor: url('img/cursor-default.png'), auto;
 }
