@@ -1,8 +1,51 @@
+/*
+
+Project functional design and interaction logic:
+
+This file handles everything that makes the experience interactive. The html defines what
+elements exist, the css defines how they look, and this file defines what they DO, like how
+the pet moves, what happens when you click buttons, how the countdown works, how the wallet
+drains, and so on.
+
+I've also used the comments here to explain bits of code that I learnt while building this
+project, the stuff like requestAnimationFrame, the easing algorithm for smooth movement, and
+how and when the audio works.
+
+*/
+
+
+/*
+Audio system:
+I kept the audio system really simple, just two functions (play and stop). They find the
+<audio> element by its ID, reset it to the start (currentTime = 0), and either play or
+pause it.
+Because some of the browsers block audio that plays before the user interacts with the page.
+So even though I don't have any sound effects to be played before the user firstly interacts
+with it, but I wrote the .catch(function(){}) at the end of audio.play() to silently handle
+the error if the browser refuses to play. Without it, the console might fills up with red
+messages that don't actually affect anything.
+The angry-mode check inside playSFX lowers the playbackRate to 0.5, which makes all the sounds
+sounds deeper and slower. It's a simple way to make everything feel "wrong" without needing
+separate audio files.
+*/
 function playSFX(id) {
     const audio = document.getElementById(id);
+    
+    /*
+    if (audio){} This check prevents the whole function from crashing if someone calls playSFX
+    with an ID that doesn't exist. Like if the audio is null or undefined, it will just silently
+    do nothin instead of throwing an error.
+    */
     if (audio) {
         audio.currentTime = 0;
 
+        /*
+        If (condition) {
+            // this code runs if the condition is true
+        } else {
+            // this code runs if the condition is false
+        }
+        */
         if (document.body.classList.contains("angry-mode")) {
             audio.playbackRate = 0.5;
         } else {
@@ -21,6 +64,17 @@ function stopSFX(id) {
     }
 }
 
+/*
+Some state variables:
+These are all the variables that track what's happenin at any given moment. I know putting them
+all as global variables at the top might not a good approach but maybe because this is a small size
+project so it works fine and makes them easy to access from any function.
+targetX / targetY: where the pet is currently moving toward.
+petMoving: a flag that prevents multiple animation loops from running at the same time.
+currentWindow: tracks which dialogue window is active (1-5).
+countdownTimer / walletTimer: hold the setInterval IDs so I can clear them later.
+playerChoices: an array that records every choice the user made, so I can determine it when needed.
+*/
 let targetX = 0;
 let targetY = 0;
 let petMoving = false;
@@ -32,6 +86,19 @@ let rejectTimes = 0;
 let lastBubbleText = "";
 const playerChoices = [];
 
+/*
+Pet faces:
+Each face is build from unicode characters and spacing (&nbsp;). I learnt this spacing way
+from building the at3 of studio3 using Twine and utilized here because regular spaces get
+collapsed in HTML, and I needed precise control over where the face sits on the cube.
+The faces tool a lots of trial and error to get right. Different operating systems render
+these characters slightly differently, what looks right on my laptop (windows) but I'm not
+sure if it looks a bit of on Mac.
+Rather than writing them out as separate variables, I put all facial expressions into a
+single object called "faces". So that it's much easier to call. Instead of remembering the
+exact html string for each face and type it out every time, I can just write setFace("happy"),
+it makes the relationship between game events and expression more obvious.
+*/
 const faces = {
     normal: "&nbsp;&nbsp;•́︿•̀<br>/&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;",
     happy: "&nbsp;&nbsp;>w<<br>#&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;",
@@ -45,9 +112,24 @@ const faces = {
 
 function setFace(name) {
     const el = document.getElementById("pet-face");
+    /*
+    Rather than using textContent, I used innerHTML because it has html content in faces.
+    Check if the element exists and if the faces object has a key matchin the 'name' parameter.
+    */
     if (el && faces[name]) el.innerHTML = faces[name];
 }
 
+/*
+Dialogue pools:
+Each phase of the game has its own set of possible phrases the pet can say. The keys follow
+a simple namin system: w1-w5 (waht the pet says when that window is first displayed), y1-y5 (
+what it says during the countdown after the user accepts), n2-n5 (what it says during the countdown
+after the user rejects), beg (the pleading phrases when the user keeps rejecting window 1).
+I made the "yes" dialogue sound excited and grateful, and the "no" dialogue sound disappointed
+but not angry (except n5, which is the final rejection). The contrast between the cute dialogue
+and what's the virus truly looks like is one of the my favorite parts of the design.
+Using 1 object to contains all dialogue's reason is the same as the faces.
+*/
 const talks = {
     "w1": ["Can I...", "I'm cold...", "Plzzzz let me in...", "I'm a good cube!", "So warm inside..."],
     "w2": ["So quiet...", "I just want some music...", "Can I play something?", "Your playlist please...", "Music time?"],
@@ -66,27 +148,73 @@ const talks = {
     "beg": ["Please don't reject me!", "I'm begging you!", "One more chance!", "Don't send me away!", "I'm too cute to delete!"]
 };
 
+/*
+Store the dialogue array for window 1 into the current pool
+*/
 let currentPool = talks["w1"];
 
+/*
+Click effect:
+Every time the user clicks anywhere on the page, this create a ■ character at the click position
+that expands and fades out over 0.6 seconds by using setTimeout(function(){}, timeDelayed). Clicking
+on empty black space gives user feedback and make it feel responsive.
+*/
 document.addEventListener("click", function(e) {
+    /*
+    Create a new <div> element to serve as the visual click effect
+    */
     const fx = document.createElement("div");
+    /*
+    Assign a class name to the new element and set the style of it
+    */
     fx.className = "click-effect";
     fx.textContent = "■";
+    /*
+    Position the effect horizontally at the exact X and Y coordinate where the mouse was clicked.
+    */
     fx.style.left = e.clientX + "px";
     fx.style.top = e.clientY + "px";
+    /*
+    Find the "click-effects" container and insert the new effect div as a child inside it.
+    */
     document.getElementById("click-effects").appendChild(fx);
     setTimeout(function() {fx.remove();}, 600);
     playSFX("sfx-click");
 });
 
+/*
+Speech bubble:
+Creates a little dialogue bubble above the pet's head. The bubble appears at the given x,y
+coordinates (offset upward by 70px so it floats above the pet), shows a random phrase from
+the current dialogue pool, and then disappears automatically after 1.5s (css).
+The do...while loop makes sure the same phrase doesn't appear twice in a row, it keeps picking
+a random index until it gets one that's different from the last one. If the pool only has 1
+phrase (which might not happen but just in case), the loop condition prevents an infinite loop.
+I use getElementById to remove any existing bubble before creating a new one, so there's
+never more than one bubble on screen at a time.
+*/
 function showBubble(x, y) {
     const old = document.getElementById("speech-bubble");
     if (old) old.remove();
+    /*
+    If the current dialogue pool is empty, exit the function.
+    */
     if (currentPool.length === 0) return;
-
+    
+    /*
+    Pick a random line from the currentPool.
+    */
     let text;
     do {
+        /*
+        Select a random index from the array and get its value
+        */
         text = currentPool[Math.floor(Math.random() * currentPool.length)];
+    /*
+    Keep picking a new line if the selected one is the same as the last spoken lines and there
+    is more than one line available. Because I think repetition would make users bored to click
+    on it the next time.
+    */
     } while (text === lastBubbleText && currentPool.length > 1);
     lastBubbleText = text;
 
@@ -94,26 +222,59 @@ function showBubble(x, y) {
     b.id = "speech-bubble";
     b.className = "speech-bubble";
     b.textContent = text;
+    /*
+    Centered above the pet / Position it 70px above the given 7 coordinate.
+    */
     b.style.left = x + "px";
     b.style.top = (y - 70) + "px";
     document.body.appendChild(b);
 
 }
-
+/*
+Find the existing speech bubble element on the page. If it exists, remove it from the DOM.
+*/
 function hideBubble() {
     const b = document.getElementById("speech-bubble");
     if (b) b.remove();
 }
 
-
+/*
+Pet movement:
+This was one of the most satisfying and also tough thing to figure out. The pet doesn't just
+teleport to wherever the user clicks, it slides there with a easing effect, fast as first and
+then slowing down as it gets close.
+How it works:
+    - Every frame (via requestAnimationFrame), I calculate the distance between the pet's
+    current position and the target position using the pythagorean theorem (a*a + b*b = c*c)。
+    - The speed for that frame is distance*0.06 so when the pet is far away, it moves fast and
+    when it's close, it moves slow.
+    - I added a minimal speed of 0.5 so it never gets too slow.
+    - When the distance drops below 0.5 pixels, the animation stops to save processing power.
+I learnt about requestAnimationFrame after I thought setInterval was the way to do animations.
+But requestAnimationFrame syncs with the browser's refresh rate (which i think usually is 60fps),
+which makes animations smoother and also pauses automatically when the tab is in the background.
+*/
 function startMovingPet() {
     const pet = document.getElementById("virus-pet");
+    /*
+    If the pet is already moving, don't start another movement. Prevent overlapping animations
+    that might cause error.
+    */
     if (petMoving) return;
+    /*
+    Set the flag to indicate the pet is now moving
+    */
     petMoving = true;
 
     function move() {
+        /*
+        Get the pet's current X and Y position from left/top css value, default to 0 if not set.
+        */
         const cx = parseFloat(pet.style.left) || 0;
         const cy = parseFloat(pet.style.top) || 0;
+        /*
+        Calculate the distance from current position to the target position.
+        */
         const dx = targetX - cx;
         const dy = targetY - cy;
         const dist = Math.sqrt(dx * dx + dy * dy);
@@ -125,18 +286,49 @@ function startMovingPet() {
 
         let speed = dist * 0.06;
         if (speed < 0.5) speed = 0.5;
+        /*
+        dx/dist = normalized direction vector. Multiple by speed to control how far to move this frame.
+        */
         pet.style.left = (cx + (dx / dist) * speed) + 'px';
         pet.style.top = (cy + (dy / dist) * speed) + 'px';
+        /*
+        This keeps calling the move() function until the pet reaches the target
+        */
         requestAnimationFrame(move);
     }
     move();
 }
 
+/*
+Click handlers:
+The document-level handler catches clicks on empty space and moves the pet there. It also hides
+any existing speech bubble. The checks for el.id and el.closest make sure clicking the pet itself
+or buttons doesn't trigger this handler.
+The pet-level handler fires when you click the cube directly. It calls stopPropagation() so the
+document handler doesn't also fire (which would immediately hide the bubble just created). It then
+shows a speech bubble at the pet's current position, so the bubble appears right above the pet's
+head.
+The angry-mode check at the top of the pet handler is what disables pet interaction during the red
+phase, if the body has the angry-mode class, clicking the pet does nothing. This is how I make the
+pet feel "uncontrollable" when it's angry
+*/
 document.addEventListener("click", function(e) {
     const el = e.target;
+    /*
+    If the clicked element is the pet itself / is inside the pet (child el), do nothing and exit
+    early (this click will be handled by the pet's own click listener below).
+    */
     if (el.id === "virus-pet" || el.closest("#virus-pet")) return;
+    /*
+    When the user click on the element that is button, hide any speech bubble and exit. Buttons hv
+    their own handlers.
+    */
     if (el.tagName === "BUTTON") {hideBubble(); return; }
     hideBubble();
+    /*
+    Set the target position to where the user clicked, offset by -30px in both X and Y so the pet
+    centers on the click point.
+    */
     targetX = e.clientX - 30;
     targetY = e.clientY - 30;
     startMovingPet();
@@ -144,15 +336,45 @@ document.addEventListener("click", function(e) {
 
 document.getElementById("virus-pet").addEventListener("click", function(e) {
     if (document.body.classList.contains("angry-mode")) return;
+    /*
+    Prevent the click from bubbling up to parent elements, this stops the global click handler
+    from also firing for this same click.
+    */
     e.stopPropagation();
     targetX = e.clientX - 30;
     targetY = e.clientY - 30;
     startMovingPet();
+    /*
+    Get the bounding rectangle of the pet element (position and dimensions on screen)
+    */
     const r = this.getBoundingClientRect();
+    /*
+    left + half the width; top - 5px
+    */
     showBubble(r.left + r.width / 2, r.top - 5);
     playSFX("sfx-bubble");
 });
 
+/*
+Countdown timer:
+This is the big 30s timer that runs after every user choice. It shows a progress bar filling up,
+a countdown number ticking down, and a scrolling log that get new entries ar specific time markers.
+The actionTexts object at the top sets the initial status message based on which stage the user's
+in and whether the user said yes or no. I wanted each stage to feel a bit different like "extracting
+files..." for stage 1, and "accessing media..." for stage 2, yalayala.
+The yesLogs and noLogs objects are what make the accept and reject paths feel different even though
+the timer structure is the same. Accept logs sound productive and technical and reject logs are
+intentionally sad and pathetic.
+The angry-mode activation happens right at the start of the countdown for stage 5 reject. I add the
+css class to the body, which triggers all the red color overrides in the stylesheet, and I also lower
+the BGM playbackRate to 0.5 if it's currently playing. (because it's played before w5-n, so the
+playbackRate need to be rewrite here instead of just stating at the starts.)
+The auto-bubble logic (the timeLeft % 2 === 0 check) makes speech bubbles appear every 2 seconds
+during the angry countdown, without the user having to click anything. This creates the feeling that
+the pet is ranting.
+The extend windows appear 2 seconds into the countdown, but only if the user accepted (isYes === true).
+The setTimeout(..., 2000) gives the timer a moment to establish itself before the new window pops in.
+*/
 function startCountdown (stageNum, isYes) {
     const timerWindow = document.getElementById('timer-window');
     const fill = document.getElementById('timer-fill');
@@ -160,33 +382,58 @@ function startCountdown (stageNum, isYes) {
     const count = document.getElementById('timer-countdown');
     const log = document.getElementById('timer-log');
 
+    /*
+    Reset the log area with a loading message and make the timer window visible cuz I've set them as
+    none in html.
+    */
     log.innerHTML = "<p>> Loading...</p>";
     timerWindow.style.display = 'block';
     let timeLeft = 30;
     count.textContent = "30s";
     fill.style.width = "0%";
 
+    /*
+    Define status messages for each stage based on player's choice.
+    */
     const actionTexts = {
         1: "Extracting files...",
+        /*
+        ?: If isYes is true, show "accessing media...", else(:), show "denying media access..."
+        */
         2: isYes ? "Accessing media..." : "Denying media access...",
         3: isYes ? "Activating webcam..." : "Blocking camera...",
         4: isYes ? "Opening wallet..." : "Blocking digital wallet access...",
         5: isYes ? "Finalizing..." : "Being angry, and hungry... Eating files..."
     };
+    /*
+    Display the appropriate status message (fallback to "processing" if stage is not found).
+    */
     action.textContent = actionTexts[stageNum] || "Processing...";
 
+    /*
+    !isYes = not isYes = user click reject
+    */
     if (stageNum === 5 && !isYes) {
         document.body.classList.add("angry-mode");
+        /*
+        Slow down the background music to 0.5 speed for creepy effect while angry mode.
+        */
         const bgm = document.getElementById("sfx-bgm");
         if (bgm && !bgm.paused) {
             bgm.playbackRate = 0.5;
         }
     }
 
+    /*
+    Add an initial log entry showing which phase started. Also, give a hint to player which phase is in.
+    */
     const initLog = document.createElement("p");
     initLog.textContent = "> Phase " + stageNum + " started...";
     log.appendChild(initLog);
 
+    /*
+    Log messages that appear at specific seconds
+    */
     const yesLogs = {
         24: "> Processing...",
         18: "> Working...",
@@ -201,26 +448,45 @@ function startCountdown (stageNum, isYes) {
         6: "> Keep being sad :(((",
         0: "> Done being sad."
     };
+    /*
+    Choose which log set to use based on the choice.
+    */
     const logsToUse = isYes ? yesLogs : noLogs;
 
     countdownTimer = setInterval(function() {
+        /*
+        Decrease time by 1 second. And update the displayed time seconds and progress bar.
+        */
         timeLeft--;
         fill.style.width = ((30 - timeLeft) / 30 * 100) + "%";
         count.textContent = timeLeft + "s";
 
+        /*
+        Show a speech bubble above the pet every 2s.
+        */
         if (stageNum === 5 && !isYes && timeLeft % 2 === 0 && timeLeft > 0) {
             const pet = document.getElementById("virus-pet");
             const r = pet.getBoundingClientRect();
             showBubble(r.left + r.width / 2, r.top - 5);
         }
 
+        /*
+        If the current second has a predefined log message, add it to the log.
+        */
         if (logsToUse.hasOwnProperty(timeLeft)) {
             const logEntry = document.createElement("p");
             logEntry.textContent = logsToUse[timeLeft];
             log.appendChild(logEntry);
+            /*
+            Auto-scroll to show the latest message.
+            */
             log.scrollTop = log.scrollHeight;
         }
 
+        /*
+        When time reaches 0, the countdown is complete. Stop the timer and update the status text
+        to show completion. Wait 1.5s then hide the timer and proceed to the next window.
+        */
         if (timeLeft <= 0) {
             clearInterval(countdownTimer);
             action.textContent = isYes ? "Complete." : "Sad... Complete.";
@@ -229,8 +495,12 @@ function startCountdown (stageNum, isYes) {
                 goToNextWindow();
             }, 1500);
         }
-    }, 1000);
+    }, 1000); // 1s interval
 
+    /*
+    If the played said yes and we're at stage 2 or later, show additional permission request panels
+    after 2 seconds.
+    */
     if (isYes && stageNum >= 2) {
         setTimeout(function() {
             if (stageNum === 2) {
@@ -245,6 +515,7 @@ function startCountdown (stageNum, isYes) {
         }, 2000);
     }
 }
+
 
 function startWalletDrain() {
     walletMoney = 1247.83;

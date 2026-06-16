@@ -1,10 +1,55 @@
+<!--
+
+Project overview:
+
+My designed project for at3 is a browser-based interactive narrative prototype,
+with "click" as its core interaction method, which is called "TheCube.exe".
+
+Users unfold the story by clicking on a green square pet and buttons within a series
+of popup windows. The entire experience simulates downloading and running an unknown
+executable file - a virus pretends as an adorable pet gradually request more system
+permissions, finally leading to irreversible ending. The total playing time is around
+3 - 5 minutes, building up the awareness to the cybersecurity.
+
+I designed a minimal black-and-green terminal aesthetics, with all visual elements
+rendered through pure CSS and Java (mostly css), cooperated with sound effects I found
+online with free license on Pixabay (I will put all referred links down the audio part).
+
+For the comments in my code, I've split them across the three files based on what each
+one is responsible for.
+    - The HTML file covers the overall structure and narrative, like "what" elements
+    exist and what role they play in the experience".
+    - The CSS file is all about visual design decisions, including the animations.
+    - The JavaScript file handles functional design and how they cooperates with other
+    files, as well as the process of me learning new code thing that I will put explanation
+    on the codes I learnt from starts.
+
+-->
+
+
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TheCube.exe</title>
+    <!--
+    Favicon:
+    I used favicon.io to generate a small green cube with black stroke as the favicon.
+    It reinforces the digital virus them from the moment the page loads, so before the
+    user clicks anything, there's already a hint of what this page is about.
+    -->
     <link rel="icon" type="image/png" sizes="32x32" href="img/favicon.ico">
+    <!--
+    Fonts:
+    I picked JetBrains Mono as the main font. It gives off that terminal and hacker vibe,
+    which fits the whole "you're runnin a suspicious .exe file" narrative. Also, I think
+    JetBrains Mono specifically stays readable even at small sizes like 10px, and since
+    my dialogue boxes are packed with text, that actually matters a lot. I've tried some
+    of the pixel style fonts but I think when their size is quite small, it makes them
+    hard to read.
+    -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&display=swap" rel="stylesheet">
@@ -12,8 +57,39 @@
 </head>
 
 <body>
+    <!--
+    Click effects:
+    This empty div is where all the square particles go whenever the user clicks anywhere
+    on the page. I gave it a container instead of putting it into the body, because that
+    way I can keep them organized and they won't accidentally interface with other absolute-
+    positioned elements like the pet.
+    Why I add a click effect is to add some feedback to the main interaction, it gives user
+    just a little visual pop, but I think it will make the whole page feel more alive and
+    responsive.
+    -->
     <div id="click-effects"></div>
 
+    <!--
+    Audio:
+    I've got 10 sound effects in total, all loaded through <audio> tags with unique IDs.
+    I chose to preload everything so the sounds are ready the moment they're needed like 
+    making sure there's no delay when the user clicks something and expects immediate
+    feedback.
+    One thing I learnt here while building this is the browsers block autoplay unless the
+    user has interacted with the page first. That first click counts as a "user gesture"
+    and unlocks the audio.
+    All sound effects were downloaded from Pixabay under free licence. Links below:
+    https://pixabay.com/sound-effects/film-special-effects-sfx-jump-07-80241/
+    https://pixabay.com/sound-effects/film-special-effects-gameboy-pluck-41265/
+    https://pixabay.com/sound-effects/film-special-effects-pixel-game-over-319170/
+    https://pixabay.com/sound-effects/film-special-effects-success-02-68338/
+    https://pixabay.com/music/video-games-little-slimex27s-adventure-151007/
+    https://pixabay.com/sound-effects/film-special-effects-sfx32-blocked-534304/
+    https://pixabay.com/sound-effects/film-special-effects-sfx33-shield-tap-534306/
+    https://pixabay.com/sound-effects/film-special-effects-sfx35-selectconfirm-534303/
+    https://pixabay.com/sound-effects/film-special-effects-cartoon-jump-6462/
+    https://pixabay.com/sound-effects/film-special-effects-retro-click-236673/
+    -->
     <audio id="sfx-jump" src="audio/jump.mp3" preload="auto"></audio>
     <audio id="sfx-click" src="audio/click.mp3" preload="auto"></audio>
     <audio id="sfx-bubble" src="audio/bubble.mp3" preload="auto"></audio>
@@ -25,6 +101,20 @@
     <audio id="sfx-bscreen" src="audio/bscreen.mp3" preload="auto"></audio>
     <audio id="sfx-window" src="audio/window.mp3" preload="auto"></audio>
 
+    <!--
+    Countdown timer:
+    This window appears after every user choice, whether they click Accept or Reject (
+    except for the window 1 choice). It's meant to simulate the feeling of watching a
+    program install itself while you can't do anything to stop it, which create an empty
+    window for users to think about their choices after making it.
+    Inside, there's a progress bar that fills up over 30s, a status text that changes based
+    on what phase you're in, a counter number, a scrolling log that adds new lines as time
+    passes.
+    I chose 30s because I wanna give enough time for users to interact with the pet as
+    well, because the pet has different dialogue pools in different phase. I planned to do
+    different log info to different phase with different choices but I think it's quite needed
+    so I just made the log different depending on accept or reject.
+    -->
     <div id="timer-window" class="timer-window" style="display: none;">
         <div class="timer-header">
             <span>TheCube.exe</span>
@@ -46,6 +136,25 @@
         </div>
     </div>
 
+    <!--
+    Extend windows:
+    These three windows are what the user's choices feel permanent. They only appear if
+    the users click Accept on certain stages, and once they're there, they cannot be closed
+    or moved (cause when you want to click on it to interact the pet will follow your
+    cursor and "stand" in front from you interacting with the extend window).
+    This is me trying to simulate what actual malware does like once you give it permission,
+    it plants something in your system that you can't easily remove.
+    Each window sits in a different corner so they don't overlap. and together they slowly
+    surround the screen.
+        -extend-media: Appears after accepting media access in stage 2. Shows a fake music
+        player with disable controls like you can see the song playing but ou cant pause.
+        The progress bar loops continuously.
+        -extend-camera: Appears after accepting camera access in stage 3. It shows a surveillance
+        feed with noise and blinking "REC" label. It's supposed to feel invasive, like someone
+        is watching you.
+        -extend-wallet: Appears after accepting wallet access in stage 4. It shows your balance
+        draining in real time as the cube goes on an uncontrolled shopping spree.
+    -->
     <div id="extend-media" class="extend-window extend-media" style="display: none;">
         <div class="extend-header"><span>Now Playing</span></div>
         <div class="extend-body">
@@ -76,11 +185,53 @@
         </div>
     </div>
 
+    <!--
+    Ending screen:
+    This is the finale. No matter what choices the user made throughout the five stages, the
+    ending is always the same, a blue screen and the cube ate all the files. The only difference
+    is the tone of the message, if the user was nice to the final question, the cube acting
+    so happy that it ate all the files, if the user refused the final question, the cube would
+    be angry and reveals its true face.
+    I went with the classic bsod look because it's really recognizable. It's an immediate
+    visual shorthand for "something has gone very wrong with your computer".
+    -->
     <div id="ending-screen" class="ending-screen" style="display: none;">
         <div class="ending-text" id="ending-text"></div>
         <div class="ending-sub" id="ending-sub"></div>
     </div>
 
+    <!--
+    Main window:
+    These are the core of the whole experience. Each window is one "stage" of the virus's escalating
+    requests. I structured it so that every stage asks for something slightly bigger than the
+    last one. It starts with "can I come in and warm up" and ends with "can I live here forever".
+    This progression is based on the foot-in-the-door technique, like people are more likely to
+    agree to a big request if they've already said yes to smaller ones. The user might not even
+    notice how much they've given away until it's too late.
+    Each window has the same layout, a green header bar with an x button (which doesn't actually
+    work), a dark green sidebar on the left and the main content area with the dialogue text and
+    two buttons.
+    Here's the breakdown of each stage:
+        1. Allocation request: The virus's first contact. It's cold, it's lonely, it just wants
+        to come inside for a minute. The request is intentionally tiny like just asking a little
+        folder to stay, so it feels harmless to say yes. If the user says no three times, the cube
+        gets thrown into the trash bin and the experience ends early.
+        2. Media access: Now the cube is inside, it wants some entertainment. It asks to play music
+        and this is the first "extra" permission beyond just existing on the system. If accepted,
+        the media player extend window appears and BGM starts playing.
+        3. Camera access: The cube acts curious about what the user looks like. This is the first
+        privacy-invasive request, cuz it wants to turn on the webcam. The dialogue keeps a cute and
+        innocent tone to hide how creepy this actually is.
+        4. Wallet access: The cube found something it (really) wants to buy, a skin just costs 0.99.
+        This is the first financial request. The amount is deliberately tiny to make it feel not
+        significant, but accepting leads to the wallet being completely drained through more escalating
+        purchases.
+        5. Permanent stay: The final question. After the last one, I assume the player has raised the
+        awareness of crisis, so they might likely chose reject so that they have big possibility to see
+        what the cube truly looks like.
+    I wrote the dialogue to sound casual and a bit awkward, like lots of "umm" and "like" and 🥺emojis,
+    because I wanted the cube to feel vulnerable and non-threatening.
+    -->
     <div id="window-1" class="window-container" style="display: none;">
         <div class="window-header"><span>✕</span></div>
         <div class="window-body">
@@ -202,11 +353,27 @@
         </div>
     </div>
 
+    <!--
+    Desktop icon:
+    Everything begins with this one icon. It's designed to look like a file sitting on the computer
+    desktop. The .exe extension is deliberate, on windows it's executable programs, and downloading
+    random .exe files from untrusted sources is one of the most common ways people gets viruses.
+    Clicking it triggers the alert pop which mimics the system dialogue that sometimes appears when
+    running unverified software.
+    -->
     <div id="desktop-icon" class="desktop-icon" onclick="startGame()">
         <div class="icon-box"></div>
         <div class="icon-label">TheCube.exe</div>
     </div>
 
+    <!--
+    The virus:
+    This little green square is the virus. I chose to make the virus cute and small rather than the
+    typical virus-like looking because I wanted the user to feel conflicted. Real social engineering
+    works the same way, malware doesn't announce itself with skulls and warnings, it looks friendly
+    and harmless. The pet's constant bouncing and changing expression make it feel alive, which makes
+    rejecting it harder. It's the one constant visual element throughout the entire experience.
+    -->
     <div id="virus-pet" class="pet-cube" style="display: none;">
         <span class="pet-face" id="pet-face">•́︿•̀｡<br>&nbsp;/</span>
     </div> 
