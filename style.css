@@ -1,3 +1,22 @@
+/*
+
+Aesthetic:
+
+The entire interface uses a pure black background with bright green text and borders. This color palette
+draws from classic computer terminals. The specific hex values used her (#33ff33 and #1eb81e) were chosen
+for their high contrast ration which is quite good for text readability.
+
+The darker green (#1eb81e) is used for the items that is not the focal point, and the brighter green
+(#33ff33) is reserved for the pet cube mostly, which it needs to stand out, creating certain visual
+hierarchy that guides user's attention to interactive elements.
+
+Green and black, while aesthetically fine, but it might cause eye strain during prolonged viewing, so
+I slightly adjust the color from the old palette I've chosen (in presentation) and I think it looks
+better now. 
+
+*/
+
+
 body {
     background-color: #000000;
     color: #33ff33;
@@ -11,9 +30,20 @@ body {
     width: 100vw;
     overflow: hidden;
     position: relative;
+    /*
+    Custom cursor:
+    The default system cursor is replaced with my designed cursor. This is not only decorative, but
+    also I think replacing the cursor is one of the first signs that a web is "taking over" the user's
+    interface, making user more immersive.
+    The auto fallback ensures the cursor still works if images fail to load.
+    */
     cursor: url('img/cursor-default.png'), auto;
 }
 
+/*
+As well as the custom cursor, I changed the cursor looks a bit different when it hovers on the elements
+that are interactive to encourage the user to click on them.
+*/
 a:hover, 
 button:hover, 
 .desktop-icon:hover, 
@@ -24,6 +54,12 @@ button:hover,
     cursor: url('img/cursor-hover.png'), pointer;
 }
 
+/*
+Desktop icon:
+The desktop icon mimics a old windows shortcut with small icon box above a small text label. The dashed
+border on hove and subtle green background glow provide visual feedback that this is an interactive
+launch point.
+*/
 .desktop-icon {
     width: 90px;
     height: 100px;
@@ -41,12 +77,10 @@ button:hover,
     justify-content: center;
     align-items: center;
 }
-
 .desktop-icon:hover {
     border: 1px dashed #33ff33;
     background-color: rgba(51, 255, 51, 0.1);
 }
-
 .icon-box {
     width: 40px;
     height: 40px;
@@ -55,7 +89,11 @@ button:hover,
     position: relative;
     background-color: transparent;
 }
-
+/*
+The ::after pseudo element draws a solid green square inside the bordered box, using css rather than an
+image to maintain the sense of programmatic and it's easy to adjust its style and location.
+The square is 30*30, leaving a 5px gap on each side inside the border, creating a padding effect.
+*/
 .icon-box::after {
     content: "";
     width: 30px;
@@ -66,13 +104,18 @@ button:hover,
     left: 50%;
     transform: translate(-50%, -50%);
 }
-
 .icon-label {
     font-size:10px;
     word-wrap: break-word;
     letter-spacing: 0.5px;
 }
 
+/*
+Pet cube:
+The pet is small solid green square with a 2px black border and slight border-radius for visual softness.
+It uses a css keyframes animation that creates a bouncing effect through scale and translate transforms,
+giving it a more lively and playful character.
+*/
 .pet-cube {
     width: 60px;
     height: 60px;
@@ -81,36 +124,67 @@ button:hover,
     border: 2px solid #000000;
     user-select: none;
     position: absolute;
+    /*
+    z-index ensure the pet always render above all windows and effects, maintaining its role as the constant
+    focal point.
+    */
     z-index: 9999;
     animation: jump 1s infinite ease-in-out;
     transition: none;
 }
-
+/*
+When the user hover on it, it will add a not-obvious box shadow, indicates it's clickable, encourage
+user to discover its dialogue pool.
+*/
 .pet-cube:hover {
     box-shadow: 0 0 0 2px #33ff3389;
 }
-
+/*
+The jump animation uses 4 keyframes to create a squish and stretch effect. The pet squashes horizontally
+on landing and stretches vertically on takeoff.
+*/
 @keyframes jump {
     0%, 100% {transform: scale(1.15, 0.85);}
     15% {transform: scale(0.85, 1.2);}
     50% {transform: scale(1, 1) translateY(-20px);}
     85% {transform: scale(0.9, 1.1) translateY(-5px);}
 }
-
+/*
+The pet's face is positioned absolutely within the cube.
+white-space: pre preserves the spacing (&nbsp;) and <br> line breaks from the jvs faces object, ensuring
+the face renders correctly.
+*/
 .pet-face {
     color: #000000;
     font-size: 10px;
     font-weight: bold;
     position: absolute;
+    /*
+    It locates at the top right.
+    */
     top: 8px;
     right: 7px;
     line-height: 1;
     white-space: pre;
+    /*
+    It allows clicks to pass through to the pet-cube parent.
+    */
     pointer-events: none;
 }
 
+/*
+Click effect:
+Every click creates a temporary character that scales from 0.5 to 1.5 over 0.6s while fading from opacity
+1 to 0. This provides tactile satisfaction in game design, like it makes every interaction feel responsive
+and meaningful.
+The effect uses absolute positioning at the click coordinates (set by jvs) and css animation for the visual
+transition.
+*/
 .click-effect {
     position: absolute;
+    /*
+    It ensure the effect doesn't interfere with subsequent clicks.
+    */
     pointer-events: none;
     z-index: 99999;
     color: #33ff33;
@@ -119,7 +193,6 @@ button:hover,
     animation: click-pop 0.6s ease-out forwards;
     transform: translate(-50%, -50%);
 }
-
 @keyframes click-pop {
     0% {
         opacity: 1;
@@ -135,6 +208,15 @@ button:hover,
     }
 }
 
+/*
+Windows 1-5:
+The window-container uses 80vw width with a 760px max-width, allowing the window to shrink on smaller
+screens while maintaining legibility.
+The double border effect (3px green border + 4px black box-shadow) creates a "framed" appearance that
+stand out while there are more extend-window opening on the screen, so they won't look "stick together".
+Flexbox column layout with stage-left (fixed sidebar) and content-right creates asymmetrical two-column
+design that distinguishes this from a standard centred dialogue box.
+*/
 .window-container {
     width: 80vw;
     max-width: 760px;
@@ -150,7 +232,6 @@ button:hover,
     transform: translate(-50%, -50%);
     box-shadow: 0 0 0 4px #000000;
 }
-
 .window-header {
     background-color: #1eb81e;
     height: 30px;
@@ -160,36 +241,42 @@ button:hover,
     padding: 0 10px;
     border-bottom: 3px solid #1eb81e;
 }
-
 .header-controls span {
     color: #000000;
     font-weight: bold;
     font-size: 14px;
     margin-left: 10px;
 }
-
 .window-body {
     display: flex;
     padding: 15px;
     background-color: #000000;
 }
-
+/*
+The green gradient sidebar serves as a visual "anchor" element.
+*/
 .stage-left {
+    /*
+    Using 0 0 18% with min-width and max-width constraints allows the sidebar to scale proportionally
+    with the window while maintaining sensible dimensions.
+    */
     flex: 0 0 18%;
     max-width: 140px;
     min-width: 80px;
     height: 326px;
+    /*
+    This empty green panel represents where the pet cube "should" be contained. Its emptiness implies
+    the cube has "escaped" and is now roaming freely on the screen.
+    */
     background: linear-gradient(to bottom, #116611 0%, #1eb81e 100%);
     margin-right: 15px;
     box-sizing: border-box;
 }
-
 .content-right {
     flex: 1;
     display: flex;
     flex-direction: column;
 }
-
 .status-bar {
     background-color: #1eb81e;
     color: #000000;
@@ -200,12 +287,13 @@ button:hover,
     justify-content: space-between;
     margin-bottom: 15px;
 }
-
+/*
+The page number is lightly darker than the header.
+*/
 .page-number {
     color:#0f6e2d;
     font-size: 12px;
 }
-
 .dialogue-box {
     border: 2px solid #1eb81e;
     padding: 15px;
@@ -215,21 +303,29 @@ button:hover,
     margin-bottom: 15px;
     background-color: #000000;
     overflow-y: auto;
+    /*
+    Custom scrollbar styling for the dialogue box. The green scroll bar on black track maintains the terminal
+    aesthetic even in overflow areas.
+    */
     scrollbar-width: thin;
     scrollbar-color: #1eb81e #000000;
 }
-
 .dialogue-box p {
     margin: 0 0 8px 0;
 }
-
+/*
+Reject and Accept buttons use contrasting colors:
+- Reject: dark background with green text (less prominent)
+- Accept: solid green background with black text (more prominent)
+This visual weighting subtly encourages the accept choice. And also the 30% and 68% width split gives accept
+nearly double the visual presence of reject.
+*/
 .button-row {
     display: flex;
     justify-content: space-between;
     height: 60px;
     gap: 10px;
 }
-
 .btn-reject {
     width: 30%;
     background-color: #0d1a0d;
@@ -242,11 +338,9 @@ button:hover,
     font-family: 'JetBrains Mono', 'Courier New', Courier, monospace;
     cursor: pointer;
 }
-
 .btn-reject:hover {
     background-color: #113311;
 }
-
 .btn-accept {
     width: 68%;
     background-color: #1eb81e;
@@ -259,12 +353,20 @@ button:hover,
     font-family: 'JetBrains Mono', 'Courier New', Courier, monospace;
     cursor: pointer;
 }
-
+/*
+Hovering on the accept has a "glowing" effect, encourage user to choose accept.
+*/
 .btn-accept:hover {
     background-color: #1eb81e;
     box-shadow: 0 0 10px #33ff33;
 }
 
+/*
+Speech bubble:
+The speech bubble appears above the pet with a downward-pointing triangle (::after for the green border,
+::before for the black interior). This two pseudo element technique creates a 1.5px bordered triangle
+without any images.
+*/
 .speech-bubble {
     position: absolute;
     z-index: 9998;
@@ -279,7 +381,9 @@ button:hover,
     animation: bubbleAppear 1.5s ease-out forwards;
     transform: translateX(-50%);
 }
-
+/*
+Green outer triangle (creates the border effect)
+*/
 .speech-bubble::after {
     content: '';
     position: absolute;
@@ -292,7 +396,9 @@ button:hover,
     border-right: 8px solid transparent;
     border-top: 8px solid #33ff33;
 }
-
+/*
+Black inner triangle covers the outer triangle's centre, creating the illusion of border.
+*/
 .speech-bubble::before {
     content: '';
     position: absolute;
@@ -306,7 +412,12 @@ button:hover,
     border-top: 6.5px solid #000000;
     z-index: 1;
 }
-
+/*
+The bubble Appear animation uses a three-phase timing: 1-10, fade in and slide up; 10-80, hold at full
+opacity; 80-100, fade out and float upward. Total duration is roughly 1.5s, because the dialogue pool
+is quite short so I think 1.5s is enough to read the text.
+translateX(-50%) centres the bubble horizontally on the pet's position, regardless of the text length.
+*/
 @keyframes bubbleAppear {
     0% {
         opacity: 0;
@@ -326,6 +437,15 @@ button:hover,
     }
 }
 
+/*
+Timer:
+The timer-window uses the same design language as the main windows but with a narrower max-width. The
+timer-fill bar starts at 0 width and transitions smoothly to 100% over 30s via jvs updating the width.
+The timer-log uses overflow-y: auto with hidden scrollbars for a clean appearance. logAppear animation
+gives each new entry a subtle slide-in from the left, mimicking a terminal feel.
+scrollbar-width: none is used for Firefox browser and ::-webkit-scrollbar:none is for chrome/safari, they
+are used to hide the scrollbar while preserving scroll functionality.
+*/
 .timer-window {
     width: 80vw;
     max-width: 600px;
@@ -338,7 +458,6 @@ button:hover,
     transform: translate(-50%, -50%);
     box-shadow: 0 0 0 4px #000000;
 }
-
 .timer-header {
     background-color: #1eb81e;
     color: #000000;
@@ -347,11 +466,9 @@ button:hover,
     font-weight: bold;
     border-bottom: 2px solid #1eb81e;
 }
-
 .timer-body {
     padding: 20px;
 }
-
 .timer-status-bar {
     width: 100%;
     height: 24px;
@@ -360,25 +477,21 @@ button:hover,
     margin-bottom: 15px;
     position: relative;
 }
-
 .timer-fill {
     height: 100%;
     background-color: #1eb81e;
     width: 0%;
     transition: width 0.5s linear;
 }
-
 .timer-info {
     display: flex;
     justify-content: space-between;
     margin-bottom: 15px;
     font-size: 13px;
 }
-
 .timer-countdown {
     color: #116611;
 }
-
 .timer-log {
     border: 2px solid #1eb81e;
     padding: 15px;
@@ -391,21 +504,27 @@ button:hover,
     scrollbar-width: none;
     -ms-overflow-style: none;
 }
-
 .timer-log::-webkit-scrollbar {
     display: none;
 }
-
 .timer-log p {
     margin: 0 0 4px 0;
     animation: logAppear 0.2s ease-out;
 }
-
 @keyframes logAppear {
     0% { opacity: 0; transform: translateX(-10px); }
     100% { opacity: 1; transform: translateX(0); }
 }
 
+/*
+Extend windows:
+Extend windows (media player, camera feed, wallet) appear permanently after the user accepts certain requests.
+They have no close buttons and remain visible until the ending screen.
+They are positioned in fixed corners using absolute positioning. This corner-based layout creates a surround
+effect, like the user's screen is gradually occupied from multiple directions.
+The extendAppear animation scales from 0.8 to 1.0 with opacity fade, creating a pop-in effect that draws
+attention to the new window.
+*/
 .extend-window {
     position: absolute;
     border: 2px solid #1eb81e;
@@ -414,12 +533,10 @@ button:hover,
     user-select: none;
     animation: extendAppear 0.5s ease-out;
 }
-
 @keyframes extendAppear {
     0% { opacity: 0; transform: scale(0.8); }
     100% { opacity: 1; transform: scale(1); }
 }
-
 .extend-header {
     background-color: #1eb81e;
     color: #000000;
@@ -427,17 +544,20 @@ button:hover,
     font-size: 12px;
     font-weight: bold;
 }
-
 .extend-body {
     padding: 12px;
 }
 
+/*
+Media player:
+Displays a cover, song title, progress bar with looping animation, and disabled pause controls. The 30s
+progressLoop animation is synchronised to the countdown duration, reinforcing temporal unity.
+*/
 .extend-media {
     top: 20px;
     right: 20px;
     width: 260px;
 }
-
 .media-cover {
     font-size: 40px;
     width: 80px;
@@ -449,7 +569,6 @@ button:hover,
     background-color: #0d1a0d;
     margin: 0 auto 10px;
 }
-
 .media-bar {
     width: 100%;
     height: 4px;
@@ -457,24 +576,28 @@ button:hover,
     background-color: #0d1a0d;
     margin: 10px 0;
 }
-
 .media-progress {
     height: 100%;
     background-color: #1eb81e;
     animation: progressLoop 30s infinite linear;
 }
-
 @keyframes progressLoop {
     0% { width: 0%; }
     100% { width: 100%; }
 }
 
+/*
+Camera feed:
+Simulates a surveillance camera with noiseShift animation that creates flickering noise overlay, and
+camera-label (the blink "REC") animation.
+The repeating-linear-gradient noise pattern creates a scan-line effect reminiscent for low-light camera
+sensors.
+*/
 .extend-camera {
     bottom: 20px;
     left: 20px;
     width: 300px;
 }
-
 .camera-feed {
     width: 100%;
     height: 150px;
@@ -483,7 +606,6 @@ button:hover,
     position: relative;
     overflow: hidden;
 }
-
 .camera-noise {
     position: absolute;
     top: 0;
@@ -499,13 +621,11 @@ button:hover,
     );
     animation: noiseShift 0.1s infinite;
 }
-
 @keyframes noiseShift {
     0% { opacity: 0.3; }
     50% { opacity: 0.6; }
     100% { opacity: 0.3; }
 }
-
 .camera-label {
     position: absolute;
     top: 8px;
@@ -515,18 +635,21 @@ button:hover,
     font-weight: bold;
     animation: blink 1s infinite;
 }
-
 @keyframes blink {
     0%, 100% { opacity: 1; }
     50% { opacity: 0; }
 }
 
+/*
+Digital wallet:
+Displays balance and transaction history. Transactions appear in red to indicate money leaving the account,
+reinforcing its importance.
+*/
 .extend-wallet {
     bottom: 20px;
     right: 20px;
     width: 260px;
 }
-
 .wallet-transactions {
     height: 120px;
     overflow-y: auto;
@@ -539,21 +662,24 @@ button:hover,
     -ms-overflow-style: none;
     margin-top: 8px;
 }
-
 .wallet-transactions::-webkit-scrollbar {
     display: none;
 }
-
 .wallet-tx {
     margin: 0 0 2px 0;
     animation: txAppear 0.3s ease-out;
 }
-
 @keyframes txAppear {
     0% { opacity: 0; color: white;}
     100% {opacity: 1; color: red;}
 }
 
+/*
+Blue screen:
+The bsod design uses windows' classic error screen color with a grey cube and white body text. The
+bsodAppear animation flickers between black and blue before settling, simulating a failing display.
+The ending-text is actually the cube's body but with grey color to mimic the error code line in real bsod.
+*/
 .ending-screen {
     position: absolute;
     top: 0;
@@ -569,7 +695,6 @@ button:hover,
     color: white;
     animation: bsodAppear 0.5s ease-out;
 }
-
 @keyframes bsodAppear {
     0% { opacity: 0; }
     20% { opacity: 1; background-color: #000000; }
@@ -577,7 +702,6 @@ button:hover,
     60% { opacity: 1; background-color: #0000AA;}
     100% { opacity: 1; }
 }
-
 .ending-text {
     font-size: 28px;
     font-weight: bold;
@@ -591,7 +715,6 @@ button:hover,
     justify-content: center;
     align-items: center;
 }
-
 .ending-sub {
     font-size: 14px;
     max-width: 700px;
@@ -599,6 +722,13 @@ button:hover,
     line-height: 2;
 }
 
+/*
+Trash bin:
+The trashDrop keyframes simulate certain gravity, the cube starts large, falls while rotating 540 degrees,
+shrinks to scale(0), and fade out.
+I don't wanna use any other assets, so I just simply use the trash bin emoji to provide an immediate visual
+cue for "deletion".
+*/
 .trash-bin {
     position: absolute;
     bottom: 20px;
@@ -607,7 +737,6 @@ button:hover,
     font-size: 50px;
     z-index: 50;
 }
-
 .trash-animation {
     position: absolute;
     z-index: 300;
@@ -615,7 +744,6 @@ button:hover,
     animation: trashDrop 1.5s ease-in forwards;
     pointer-events: none;
 }
-
 @keyframes trashDrop {
     0% { opacity: 1; transform: translateY(0) rotate(0deg) scale(1); }
     50% { opacity: 1; transform: translateY(40vh) rotate(180deg) scale(0.6); }
@@ -623,57 +751,54 @@ button:hover,
     100% { opacity: 0; transform: translateY(90vh) rotate(540deg) scale(0); }
 }
 
+/*
+Angry-mode:
+When the user rejects the final request (stage 5), the interface transform from green to red. This is achieved
+through css descendant selectors (body.angry-mode .timer-window) that override the default green values with
+red equivalents.
+The color mapping follows a consistent logic: darker green to darker red, brighter green to brighter red.
+Because some elements I used inline styles, the angry-mode css selectors cannot override them due to specificity
+rules. This is a known limitation of mixing inline styles with external stylesheets.
+*/
 body.angry-mode .timer-window {
     border-color: #cc0000;
 }
-
 body.angry-mode .timer-header {
     background-color: #cc0000;
     border-bottom-color: #cc0000;
 }
-
 body.angry-mode .timer-status-bar {
     border-color: #cc0000;
 }
-
 body.angry-mode .timer-fill {
     background-color: #cc0000;
 }
-
 body.angry-mode .timer-log {
     border-color: #cc0000;
     color: #7a0d0d;
 }
-
 body.angry-mode .timer-countdown {
     color: #7a0d0d;
 }
-
 body.angry-mode .extend-window {
     border-color: #cc0000;
 }
-
 body.angry-mode .extend-header {
     background-color: #cc0000;
 }
-
 body.angry-mode .extend-body {
     color: #cc0000;
 }
-
 body.angry-mode .speech-bubble {
     color: red;
     border-color: red;
 }
-
 body.angry-mode .speech-bubble::after {
     border-top-color: red;
 }
-
 body.angry-mode .click-effect {
     color: red;
 }
-
 body.angry-mode .pet-cube:hover {
     box-shadow: none;
     cursor: url('img/cursor-default.png'), auto;

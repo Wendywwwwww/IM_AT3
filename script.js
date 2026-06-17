@@ -516,7 +516,15 @@ function startCountdown (stageNum, isYes) {
     }
 }
 
-
+/*
+Wallet drain:
+Instead of random purchase, the wallet drains through a fixed sequence of 15 items, each appearing
+every 1.8s. Prices escalate from 0.99 to 394.94, totally got only 0.03 remaining.
+This precise design ensures some kinda narrative arc, when small innocent purchases gradually become
+expensive and you can't do anything with it, creating a sense of loss of control. The total remaining
+is 0.03 rather than 0.00, it's that I want to add a touch of dark humour.
+Each transaction triggers sfx-wallet for auditory feedback.
+*/
 function startWalletDrain() {
     walletMoney = 1247.83;
     const items = [
@@ -537,20 +545,35 @@ function startWalletDrain() {
         { name: "Everything bundle", price: 394.94 },
     ];
 
+    /*
+    Track which item currently "buying".
+    */
     let index = 0;
 
     walletTimer = setInterval(function() {
+        /*
+        If all items have been brought, stop the walletTimer.
+        */
         if (index >= items.length) {
             clearInterval(walletTimer);
             return;
         }
 
+        /*
+        Get the current item and subtract its price from the wallet balance.
+        */
         const item = items[index];
         walletMoney -= item.price;
         playSFX("sfx-wallet");
         
+        /*
+        Update the displayed wallet balance. toFixed(2) - rounded to 2 decimal places.
+        */
         document.getElementById("wallet-amount").textContent = walletMoney.toFixed(2);
 
+        /*
+        Style it and display it out. Add the transaction to the log.
+        */
         const txDiv = document.getElementById("wallet-transactions");
         const tx = document.createElement("p");
         tx.style.color = "#ff4444";
@@ -559,23 +582,46 @@ function startWalletDrain() {
         txDiv.appendChild(tx);
         txDiv.scrollTop = txDiv.scrollHeight;
 
+        /*
+        Move to the next item. let index = 0, then index++ = index turns to 1.
+        */
         index++;
-    }, 1800);
+    }, 1800); // 1.8s interval
 }
 
+/*
+Choice system:
+Records user's choice and hide the current window, then update the pet's facial expression and dialogue
+pool, and trigger the countdown.
+Stage 1 reject is specially handled with the pleading sequence which would be explained in doPleading.
+*/
 function handleChoice(stageNum, choice) {
+    /*
+    Record user's choice in the history array and stores for later reference. push - add a item to array.
+    If user click accept in window 1 (stage 1), playerChoices = [ {stage: 1, choice: true}].
+    */
     playerChoices.push({ stage: stageNum, choice: choice});
 
+    /*
+    !choice = if choice is false.
+    If choice is false and user is at the stage 1, trigger the pleading sequence.
+    */
     if (!choice && stageNum === 1) {
         playSFX("sfx-reject");
         doPleading(stageNum);
         return;
     }
 
+    /*
+    Hide the window and bubble.
+    */
     document.getElementById("window-" + stageNum).style.display = "none";
     hideBubble();
 
     if (choice) {
+        /*
+        If user chose accept in different stage, set different dialogue pool and change pet's expression.
+        */
         playSFX("sfx-accept");
         currentPool = talks["y" + stageNum];
         if (stageNum === 1) setFace("happy");
@@ -584,47 +630,97 @@ function handleChoice(stageNum, choice) {
         else if (stageNum === 4) setFace("evil");
         else setFace("love");
     } else {
+        /*
+        Same logic with yes path, difference is at stage 5, if user chose reject, it goes to angry mode
+        so it needs a more creepy facial expression.
+        */
         playSFX("sfx-reject");
         currentPool = talks["n" + stageNum];
         if (stageNum === 5) setFace("angry");
         else setFace("sad");
     }
 
+    /*
+    After 1s delay, show a speech bubble automatically to give a hint that the pet is clickable and change
+    the dialogue pool in different stage, encourage user click more to interact with the pet.
+    The location is the same rational as when I deal with all speech bubble.
+    */
     setTimeout(function() {
         const pet = document.getElementById("virus-pet");
         const r = pet.getBoundingClientRect();
         showBubble(r.left + r.width / 2, r.top - 5);
     }, 100);
 
+    /*
+    Start the timer for this stage and it will show progress, log, and trigger the next stage when done
+    which is explained under startCountdown.
+    */
     startCountdown(stageNum, choice);
 }
 
+/*
+Pleading (user can continue rejecting 3 times at the stage 1):
+Three rejections in w1 trigger escalating pleading. The reject button shrinks from 30% to 22% to 14% while
+the accept button expands, which makes rejection physically harder and acceptance easier.
+The button text will change and the pet's face switches to "pleading", creating a more guilt-inducing
+experience designed to make the use reconsider their choice.
+After 3 rejections, the deletePet function is called.
+*/
 function doPleading(stageNum) {
     rejectTimes++;
     document.getElementById("window-1").style.display = "none";
 
+    /*
+    If the user has rejected 3 times, the virus gives up and gets deleted.
+    */
     if (rejectTimes >= 3) {
         deletePet();
         return;
     }
 
+    /*
+    Change current dialogue pool and pet's face.
+    */
     currentPool = talks["beg"];
     setFace("begging");
 
+    /*
+    Overwrite the dialogue box content.
+    [0] = access the first element in the array. I searched that using querySelector would be simpler
+    to write but I kinda get used to getElementBy... cuz I think it's more obvious what it means from
+    its name, so when using getElementById, it's better to use [0] to indicate it's operating the whole
+    array, instead of a single element.
+    */
     const w = document.getElementById("window-1");
     w.getElementsByClassName("dialogue-box")[0].innerHTML = 
+        /*
+        \" is an escape character, which is used to display "" in the text box.
+        */
         "<p>\"Wait! Please don't reject me...</p>" +
         "<p>I promise I'll be good! Just give me one more chance...</p>" +
         "<p>I'm begging you... 🥺💔\"</p>";
     
+    /*
+    Calculate button widths based on how many times the player has rejected, each rejection makes the
+    rejection button smaller and makes the acceptance bigger.
+    I have a rough time dealing with the percentage, cuz when the reject button shrink, the gap between
+    two buttons got bigger so I adjust the value lots of times that finally the gap looks remaining the
+    same now.
+    */
     const rejectBtn = w.getElementsByClassName("btn-reject")[0];
     const acceptBtn = w.getElementsByClassName("btn-accept")[0];
     const ww = 30 - rejectTimes * 8;
     rejectBtn.style.width = ww + "%";
+    /*
+    Change the reject button text based on how many times rejected.
+    */
     rejectBtn.textContent = ["No...", "Please no..."][rejectTimes - 1] || "No...";
     acceptBtn.style.width = (68 + rejectTimes * 8) + "%";
     acceptBtn.textContent = "Accept";
 
+    /*
+    Show the window again with the updated pleading content.
+    */
     w.style.display = "flex";
 
     setTimeout(function() {
@@ -633,6 +729,10 @@ function doPleading(stageNum) {
         showBubble(r.left + r.width / 2, r.top - 5);
     }, 100);
 
+    /*
+    Override the accept button click handler. Clicking accept removes the last no from history and
+    records a yes instead.
+    */
     rejectBtn.onclick = function() {
         playSFX("sfx-reject");
         doPleading(stageNum);
@@ -644,19 +744,34 @@ function doPleading(stageNum) {
     };
 }
 
+/*
+Trash bin:
+The deletion sequence creates a funeral-like scene for the pet. A trash bin emoji appears at the bottom
+centre and after 0.5s, a cube begins falling from the top (the animation is handled in css). Then an
+alert message confirms deletion, followed by page reload.
+*/
 function deletePet() {
+    /*
+    Set certain delay time so the sound effect can just play at the point when the cube been thrown into
+    the bin.
+    */
     setTimeout(function() { playSFX("sfx-bin"); }, 1100);
+    /*
+    Hide all elements on the page.
+    */
     document.getElementById("virus-pet").style.display = "none";
     document.getElementById("timer-window").style.display = "none";
     document.getElementById("extend-media").style.display = "none";
     document.getElementById("extend-camera").style.display = "none";
     document.getElementById("extend-wallet").style.display = "none";
-
+    /*
+    Just for in case, loop through all 5 windows and hide each one. Hide the speech bubble that might
+    from the screen.
+    */
     for (let i = 1; i <= 5; i++) {
         const w = document.getElementById("window-" + i);
         if (w) w.style.display = "none";
     }
-    if (walletTimer) clearInterval(walletTimer);
     hideBubble();
 
     const bin = document.createElement("div");
@@ -665,13 +780,19 @@ function deletePet() {
     document.body.appendChild(bin);
 
     setTimeout(function() {
+        /*
+        It's like the cube's "ghost"
+        */
         const ghost = document.createElement("div");
         ghost.className = "trash-animation";
         ghost.textContent = "■";
         ghost.style.fontSize = "100px";
         ghost.style.zIndex = "10";
-
         document.body.appendChild(ghost);
+
+        /*
+        After 1.6s, clean up the screen and reload.
+        */
         setTimeout(function() {
             ghost.remove();
             bin.remove();
@@ -681,6 +802,19 @@ function deletePet() {
     }, 500);
 }
 
+/*
+When I look back, I just found that the goToNextWindow and startGame have quite similar logic and codes,
+like setting the window's display, switching the current dialogue pool, and changing face. This same
+sequence of operations was separated into two functions rather than being abstracted into one.
+I think that is because at an early stage of this project, I felt this approach is efficient, like it
+was quicker to paste the code I have written than to stop and design a proper function signature with
+appropriate parameters. However as the codebase grew, the drawbacks became apparent. Any future change
+to the window transition would need to be applied in two places, getting a risk of inconsistency. More
+importantly, this pattern forces anyone reading the code (mostly me) to mentally feel a bit frustrated
+cuz I just write down whatever function comes to mind at the starts, but that actually cause me more time
+to adjust it. So this taught me that maybe there's a good way to have a rough structure plan before
+start writing the codes, then I think the overall layout will be much cleaner and easy to adjust.
+*/
 function goToNextWindow() {
     currentWindow++;
     if (currentWindow <=5) {
@@ -700,6 +834,15 @@ function goToNextWindow() {
     }
 }
 
+/*
+Ending:
+The ending mimics the windows bsod to immediately create the sense of "system crash".
+There are two endings, but both result in file destruction, like they're all no-win scenario that reinforce
+the narrative, which is that trusting a virus always leads to negative consequences, so be careful when
+dealing with strange file you found on internet, even thought you're some kind of curious about it.
+Because I would not ask for the real file access, so the file destruction is purely narrative, this kinda
+limits the emotional impact compared to a native application that could demonstrate real system changes.
+*/
 function showEnding() {
     document.body.classList.remove("angry-mode");
     stopSFX("sfx-bgm");
@@ -709,14 +852,20 @@ function showEnding() {
     document.getElementById("extend-media").style.display = "none";
     document.getElementById("extend-camera").style.display = "none";
     document.getElementById("extend-wallet").style.display = "none";
-    if (walletTimer) clearInterval(walletTimer);
     hideBubble();
 
+    /*
+    Get the user's last recorded choice, where the playerChoices is an array that stores all choices made
+    throughout the game.
+    */
     const lastChoice = playerChoices[playerChoices.length - 1];
     const screen = document.getElementById("ending-screen");
     const title = document.getElementById("ending-text");
     const sub = document.getElementById("ending-sub");
 
+    /*
+    Two branches with same consequences
+    */
     if (lastChoice && lastChoice.choice) {
         title.innerHTML = ":)<br>";
         sub.innerHTML = "Thank you for letting me in!<br>I'm so happy with you and I just love this place so much that...<br>I ate everything... Sorry.. But your files were delicious!🥺";
@@ -727,14 +876,27 @@ function showEnding() {
 
     playSFX("sfx-bscreen");
     screen.style.display = "flex";
+    /*
+    After 10s, reload the page automatically.
+    */
     setTimeout(function() { location.reload(); }, 10000);
 }
 
+/*
+Entry point:
+The startGame function is trigger by clicking the desktop icon, mimicking the action of launching an unknown
+.exe file. The alert simulates a system dialogue that might appears when running unverified software.
+The pet's initial position is calculated as the centre of the viewport, establishing it as the focal point.
+The css animationiteration event listener synchronises the jump sound effect with the pet's bouncing animation.
+*/
 function startGame() {
     alert("Initializing TheCube.exe...");
     document.getElementById("desktop-icon").style.display = "none";
     document.getElementById("window-1").style.display = "flex";
     playSFX("sfx-window");
+    /*
+    Reset all status.
+    */
     currentWindow = 1;
     rejectTimes = 0;
     playerChoices.length = 0;
@@ -743,16 +905,29 @@ function startGame() {
 
     const pet = document.getElementById("virus-pet");
     pet.style.display = "block";
-    pet.style.left = (window.innerWidth / 2 - 30) + "px";
+    /*
+    Position the virus at the centre of the screen.
+    */
+    pet.style.left = (window.innerWidth / 2 - 30) + "px"; //30px is a half of its width / height
     pet.style.top = (window.innerHeight / 2 - 30) + "px";
+    /*
+    Set the target position (where the pet will move to) to its current position.
+    */
     targetX = parseFloat(pet.style.left);
     targetY = parseFloat(pet.style.top);
 
+    /*
+    Automatically trigger a speech bubble give a hint to the user that the pet might be interactive, and
+    cooperate with the hover effect in css, making user has large possibility to interact with the cube.
+    */
     setTimeout(function() {
         const r = pet.getBoundingClientRect();
         showBubble(r.left + r.width / 2, r.top - 5);
     }, 100);
 
+    /*
+    animationiteration: Execute the code here at the end of each animation loop.
+    */
     pet.addEventListener("animationiteration", function() {
         playSFX("sfx-jump");
     });
